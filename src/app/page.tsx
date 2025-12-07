@@ -1,0 +1,348 @@
+'use client'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card'
+
+interface Stream {
+  id: string
+  name: string
+  description: string
+  endpoint: string
+  tags?: string[]
+  clicks_node?: number
+  clicks_python?: number
+  created_at?: string
+}
+
+export default function Home() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<Stream[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pinging, setPinging] = useState<string>('')
+  const [latencies, setLatencies] = useState<Record<string, number>>({})
+  const timer = useRef<NodeJS.Timeout | null>(null)
+
+  const search = useCallback(async (q: string) => {
+    setLoading(true)
+    
+    try {
+      // If query is empty, show all streams (limit 6)
+      if (!q.trim()) {
+        const { data, error } = await supabase
+          .from('streams')
+          .select('*')
+          .limit(6)
+        
+        if (error) {
+          console.error('Search error:', error.message || error)
+        }
+        
+        setResults(data || [])
+        setLoading(false)
+        return
+      }
+
+      // Build search query - search name, description, and tags
+      const searchTerm = q.trim()
+      const searchLower = searchTerm.toLowerCase()
+      
+      // Fetch all streams and filter client-side
+      // This approach works reliably and handles tags array search properly
+      const { data, error } = await supabase
+        .from('streams')
+        .select('*')
+        .limit(50)
+      
+      if (error) {
+        console.error('Search error:', error.message || error)
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      if (!data || data.length === 0) {
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      // Filter results to check name, description, and tags
+      const filtered = data.filter(stream => {
+        const nameMatch = stream.name?.toLowerCase().includes(searchLower) ?? false
+        const descMatch = stream.description?.toLowerCase().includes(searchLower) ?? false
+        const tagMatch = Array.isArray(stream.tags) && stream.tags.some((tag: string) => 
+          tag.toLowerCase().includes(searchLower)
+        )
+        return nameMatch || descMatch || tagMatch
+      }).slice(0, 6) // Limit to 6 results
+
+      setResults(filtered)
+      setLoading(false)
+    } catch (err) {
+      console.error('Unexpected error in search:', err)
+      setResults([])
+      setLoading(false)
+    }
+  }, [])
+
+  // Initial load - fetch all streams
+  useEffect(() => {
+    search('')
+  }, [search])
+
+  // Debounced search when query changes
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => search(query), 300)
+    return () => {
+      if (timer.current) clearTimeout(timer.current)
+    }
+  }, [query, search])
+
+  const ping = useCallback(async (endpoint: string, id: string) => {
+    setPinging(id)
+    const start = Date.now()
+    let ws: WebSocket | null = null
+    let timeoutId: NodeJS.Timeout | null = null
+
+    try {
+      ws = new WebSocket(endpoint)
+      
+      // Set 3-second timeout
+      timeoutId = setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.CONNECTING) {
+          ws.close()
+          setLatencies(prev => ({ ...prev, [id]: 3000 }))
+          setPinging('')
+        }
+      }, 3000)
+
+      ws.onopen = () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        const latency = Date.now() - start
+        setLatencies(prev => ({ ...prev, [id]: latency }))
+        ws?.close()
+        setPinging('')
+      }
+
+      ws.onerror = () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        setLatencies(prev => ({ ...prev, [id]: 9999 }))
+        setPinging('')
+      }
+
+      ws.onclose = () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        if (pinging === id) {
+          setPinging('')
+        }
+      }
+    } catch (err) {
+      if (timeoutId) clearTimeout(timeoutId)
+      setLatencies(prev => ({ ...prev, [id]: 9999 }))
+      setPinging('')
+    }
+  }, [pinging])
+
+  const copy = useCallback(async (endpoint: string, id: string, type: 'node' | 'python') => {
+    const nodeCode = `const WebSocket = require('ws');
+const ws = new WebSocket('${endpoint}');
+
+ws.on('open', () => {
+  console.log('Connected');
+});
+
+ws.on('message', (data) => {
+  console.log('Received:', data.toString());
+});
+
+ws.on('error', (error) => {
+  console.error('Error:', error);
+});`
+
+    const pythonCode = `import websocket
+import json
+
+def on_message(ws, message):
+    print(f"Received: {message}")
+
+def on_error(ws, error):
+    print(f"Error: {error}")
+
+def on_open(ws):
+    print("Connected")
+
+ws = websocket.WebSocketApp(
+    "${endpoint}",
+    on_message=on_message,
+    on_error=on_error,
+    on_open=on_open
+)
+ws.run_forever()`
+
+    const code = type === 'node' ? nodeCode : pythonCode
+
+    try {
+      await navigator.clipboard.writeText(code)
+      toast.success('📋 Copied!')
+      // Silently track click
+      fetch('/api/click', {
+        method: 'POST',
+        body: JSON.stringify({ id, type }),
+        headers: { 'Content-Type': 'application/json' },
+      }).catch(() => {})
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+      toast.error('Failed to copy')
+    }
+  }, [])
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
+      <div className="container mx-auto px-6 py-16">
+        <h1 className="text-center text-7xl md:text-8xl font-black mb-4 text-white">
+          DataPlug
+        </h1>
+        <p className="text-center text-2xl text-gray-400 mb-12">
+          Find any real-time data stream in seconds
+        </p>
+
+        <div className="max-w-2xl mx-auto mb-16">
+          <Input
+            placeholder="e.g. solana confirmed transactions"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="h-16 text-xl text-white placeholder:text-gray-500"
+            style={{
+              backgroundColor: '#0f0f0f',
+              border: '1px solid rgba(0, 255, 255, 0.1)',
+              borderRadius: '12px',
+              boxShadow: 'inset 0 0 20px rgba(0, 255, 255, 0.05)',
+            }}
+          />
+        </div>
+
+        <div className="grid gap-8 max-w-5xl mx-auto">
+          {loading ? (
+            <p className="text-center text-2xl text-white">Loading…</p>
+          ) : results.length === 0 ? (
+            <p className="text-center text-xl text-gray-500">
+              No streams found — DM @0xJosephK on X
+            </p>
+          ) : (
+            results.map(s => (
+              <div
+                key={s.id}
+                className="rounded-3xl transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  background: 'rgba(30, 30, 40, 0.6)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(0, 255, 255, 0.2)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 12px 48px rgba(0, 255, 255, 0.15), 0 0 0 1px rgba(0, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h3 className="text-2xl font-semibold text-white mb-2">{s.name}</h3>
+                    <p className="text-gray-300">{s.description}</p>
+                  </div>
+                  <div className="mb-6">
+                    <code className="block text-sm text-cyan-300 break-all font-mono">
+                      {s.endpoint}
+                    </code>
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => ping(s.endpoint, s.id)}
+                      disabled={pinging === s.id}
+                      className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        border: '1px solid rgba(0, 255, 255, 0.4)',
+                        color: 'rgba(0, 255, 255, 0.9)',
+                        background: 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                          e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                          e.currentTarget.style.backdropFilter = 'blur(10px)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                        e.currentTarget.style.backdropFilter = 'none'
+                      }}
+                    >
+                      {pinging === s.id ? 'Pinging…' : latencies[s.id] ? `${latencies[s.id]}ms` : 'Ping'}
+                    </button>
+                    <button
+                      onClick={() => copy(s.endpoint, s.id, 'node')}
+                      className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                      style={{
+                        border: '1px solid rgba(0, 255, 255, 0.4)',
+                        color: 'rgba(0, 255, 255, 0.9)',
+                        background: 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                        e.currentTarget.style.backdropFilter = 'blur(10px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                        e.currentTarget.style.backdropFilter = 'none'
+                      }}
+                    >
+                      Copy Node.js
+                    </button>
+                    <button
+                      onClick={() => copy(s.endpoint, s.id, 'python')}
+                      className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                      style={{
+                        border: '1px solid rgba(0, 255, 255, 0.4)',
+                        color: 'rgba(0, 255, 255, 0.9)',
+                        background: 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                        e.currentTarget.style.backdropFilter = 'blur(10px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                        e.currentTarget.style.backdropFilter = 'none'
+                      }}
+                    >
+                      Copy Python
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
