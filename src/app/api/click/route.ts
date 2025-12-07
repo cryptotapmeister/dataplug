@@ -18,21 +18,31 @@ export async function POST(request: NextRequest) {
     // Create direct Supabase client for server-side operations
     // Use service role key for updates (bypasses RLS) or anon key if service role not available
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const keyToUse = supabaseServiceKey || supabaseAnonKey
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !keyToUse) {
       console.error('❌ Missing Supabase credentials')
       return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
     }
 
+    // Log which key is being used
+    if (supabaseServiceKey) {
+      console.log('🔑 Using SERVICE ROLE key (bypasses RLS)')
+    } else {
+      console.log('⚠️ Using ANON key (may be blocked by RLS)')
+      console.log('💡 To fix: Add SUPABASE_SERVICE_ROLE_KEY to .env.local')
+    }
+
     // Use service role key for updates (bypasses RLS) - this is safe for server-side API routes
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    const supabase = createClient(supabaseUrl, keyToUse, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     })
-    console.log('✅ Supabase client created (using service role for updates)')
+    console.log('✅ Supabase client created')
 
     // Fetch current stream to get current click count
     console.log('🔍 Fetching stream with id:', id)
