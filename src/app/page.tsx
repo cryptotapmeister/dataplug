@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +32,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [pinging, setPinging] = useState<string>('')
   const [latencies, setLatencies] = useState<Record<string, number>>({})
+  const [user, setUser] = useState<User | null>(null)
   const timer = useRef<NodeJS.Timeout | null>(null)
 
   const search = useCallback(async (q: string) => {
@@ -96,6 +98,23 @@ export default function Home() {
     }
   }, [])
 
+  // Check auth state on mount and listen for changes
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
   // Initial load - fetch all streams
   useEffect(() => {
     search('')
@@ -155,6 +174,30 @@ export default function Home() {
     }
   }, [pinging])
 
+  const handleSignIn = useCallback(async () => {
+    const email = prompt('Enter your email:')
+    if (!email) return
+
+    const redirectUrl = `${window.location.origin}/auth/callback`
+    
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    })
+
+    if (error) {
+      alert(`Error: ${error.message}`)
+    } else {
+      alert('Check your email for magic link!')
+    }
+  }, [])
+
+  const handleSignOut = useCallback(async () => {
+    await supabase.auth.signOut()
+  }, [])
+
   const copy = useCallback(async (endpoint: string, id: string, type: 'node' | 'python') => {
     const nodeCode = `const WebSocket = require('ws');
 const ws = new WebSocket('${endpoint}');
@@ -210,6 +253,60 @@ ws.run_forever()`
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
+      {/* Auth UI - Top Right */}
+      <div className="absolute top-6 right-6 z-10">
+        {user ? (
+          <div className="flex items-center gap-4">
+            <span className="text-white text-sm">
+              Welcome @{user.email?.split('@')[0]}
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+              style={{
+                border: '1px solid rgba(0, 255, 255, 0.4)',
+                color: 'rgba(0, 255, 255, 0.9)',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                e.currentTarget.style.backdropFilter = 'blur(10px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                e.currentTarget.style.backdropFilter = 'none'
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleSignIn}
+            className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+            style={{
+              border: '1px solid rgba(0, 255, 255, 0.4)',
+              color: 'rgba(0, 255, 255, 0.9)',
+              background: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+              e.currentTarget.style.backdropFilter = 'blur(10px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+              e.currentTarget.style.backdropFilter = 'none'
+            }}
+          >
+            Sign in
+          </button>
+        )}
+      </div>
+
       <div className="container mx-auto px-6 py-16">
         <h1 className="text-center text-7xl md:text-8xl font-black mb-4 text-white">
           DataPlug
