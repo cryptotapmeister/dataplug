@@ -16,16 +16,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct Supabase client for server-side operations
+    // Use service role key for updates (bypasses RLS) or anon key if service role not available
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error('❌ Missing Supabase credentials')
       return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
-    console.log('✅ Supabase client created')
+    // Use service role key for updates (bypasses RLS) - this is safe for server-side API routes
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+    console.log('✅ Supabase client created (using service role for updates)')
 
     // Fetch current stream to get current click count
     console.log('🔍 Fetching stream with id:', id)
@@ -52,34 +59,86 @@ export async function POST(request: NextRequest) {
       const newCount = (stream.clicks_node || 0) + 1
       console.log(`⬆️ Incrementing clicks_node: ${stream.clicks_node || 0} → ${newCount}`)
       
-      const { data: updateData, error: updateError } = await supabase
+      const { data: updateData, error: updateError, status, statusText } = await supabase
         .from('streams')
         .update({ clicks_node: newCount })
         .eq('id', id)
         .select()
 
+      console.log('📊 Update response:', { status, statusText, updateData, updateError })
+
       if (updateError) {
         console.error('❌ Update error (node):', updateError)
-        return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
+        return NextResponse.json({ success: false, error: updateError.message, details: updateError }, { status: 500 })
       }
 
-      console.log('✅ Successfully updated clicks_node:', updateData)
+      // Verify update worked - if updateData is empty, RLS might be blocking
+      if (!updateData || updateData.length === 0) {
+        console.error('⚠️ Update returned empty array - likely RLS blocking or update failed')
+        
+        // Try to verify by fetching again
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('streams')
+          .select('clicks_node')
+          .eq('id', id)
+          .single()
+        
+        console.log('🔍 Verification fetch:', { verifyData, verifyError })
+        
+        if (verifyData && verifyData.clicks_node === newCount) {
+          console.log('✅ Update actually worked (verified)')
+        } else {
+          console.error('❌ Update did not work - RLS likely blocking')
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Update blocked by Row Level Security. Please enable UPDATE permissions for anon role on streams table.' 
+          }, { status: 403 })
+        }
+      } else {
+        console.log('✅ Successfully updated clicks_node:', updateData)
+      }
     } else if (type === 'python') {
       const newCount = (stream.clicks_python || 0) + 1
       console.log(`⬆️ Incrementing clicks_python: ${stream.clicks_python || 0} → ${newCount}`)
       
-      const { data: updateData, error: updateError } = await supabase
+      const { data: updateData, error: updateError, status, statusText } = await supabase
         .from('streams')
         .update({ clicks_python: newCount })
         .eq('id', id)
         .select()
 
+      console.log('📊 Update response:', { status, statusText, updateData, updateError })
+
       if (updateError) {
         console.error('❌ Update error (python):', updateError)
-        return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
+        return NextResponse.json({ success: false, error: updateError.message, details: updateError }, { status: 500 })
       }
 
-      console.log('✅ Successfully updated clicks_python:', updateData)
+      // Verify update worked
+      if (!updateData || updateData.length === 0) {
+        console.error('⚠️ Update returned empty array - likely RLS blocking or update failed')
+        
+        // Try to verify by fetching again
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('streams')
+          .select('clicks_python')
+          .eq('id', id)
+          .single()
+        
+        console.log('🔍 Verification fetch:', { verifyData, verifyError })
+        
+        if (verifyData && verifyData.clicks_python === newCount) {
+          console.log('✅ Update actually worked (verified)')
+        } else {
+          console.error('❌ Update did not work - RLS likely blocking')
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Update blocked by Row Level Security. Please enable UPDATE permissions for anon role on streams table.' 
+          }, { status: 403 })
+        }
+      } else {
+        console.log('✅ Successfully updated clicks_python:', updateData)
+      }
     } else {
       console.error('❌ Invalid type:', type)
       return NextResponse.json({ success: false, error: 'Invalid type' }, { status: 400 })
