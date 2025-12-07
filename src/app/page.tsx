@@ -239,12 +239,21 @@ ws.run_forever()`
     try {
       await navigator.clipboard.writeText(code)
       toast.success('📋 Copied!')
-      // Silently track click
+      // Track click
       fetch('/api/click', {
         method: 'POST',
         body: JSON.stringify({ id, type }),
         headers: { 'Content-Type': 'application/json' },
-      }).catch(() => {})
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            console.error('Click tracking failed:', data.error)
+          }
+        })
+        .catch(err => {
+          console.error('Click tracking error:', err)
+        })
     } catch (err) {
       console.error('Failed to copy to clipboard:', err)
       toast.error('Failed to copy')
