@@ -379,8 +379,16 @@ ws.run_forever()`
           {loading ? (
             <p className="text-center text-2xl text-white">Loading…</p>
           ) : results.length === 0 ? (
-            <p className="text-center text-xl text-gray-500">
-              No streams found — DM @0xJosephK on X
+            <p className="text-center text-xl text-gray-500 text-center">
+              No streams found —{' '}
+              <a
+                href={`https://x.com/messages/compose?recipient_id=1088466265&text=Hey%20@0xJosephK%20—%20can%20you%20add%20a%20stream%20for%20"${encodeURIComponent(query)}"?`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300 underline underline-offset-4 font-medium"
+              >
+                click here to request it
+              </a>
             </p>
           ) : (
             results.map(s => (
