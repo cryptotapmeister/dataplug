@@ -35,6 +35,10 @@ export default function AdminPage() {
   const [streams, setStreams] = useState<StreamStats[]>([])
   const [sortBy, setSortBy] = useState<'email' | 'created_at'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  const handleStreamsClick = () => {
+    router.push('/admin/streams')
+  }
 
   // Check auth and admin access
   useEffect(() => {
@@ -220,7 +224,7 @@ export default function AdminPage() {
         </h1>
 
         {/* Stats Cards - Premium Vision Pro Style */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 max-w-7xl mx-auto">
           {/* Total Users */}
           <div
             className="rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02]"
@@ -269,6 +273,31 @@ export default function AdminPage() {
               {streams.reduce((sum, s) => sum + s.total, 0)}
             </p>
             <p className="text-xs text-gray-500 mt-4">Across all streams</p>
+          </div>
+
+          {/* Total Number of Streams - Clickable */}
+          <div
+            className="rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+            onClick={handleStreamsClick}
+            style={{
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 16px 64px rgba(0, 255, 255, 0.2), 0 0 0 1px rgba(0, 255, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.5)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.3)'
+            }}
+          >
+            <h3 className="text-cyan-400 text-sm font-medium mb-4 tracking-wide uppercase">Total Number of Streams</h3>
+            <p className="text-7xl md:text-8xl font-black text-white mb-2 leading-none">{streams.length}</p>
+            <p className="text-xs text-gray-500 mt-4">Click to view all</p>
           </div>
         </div>
 
