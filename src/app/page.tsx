@@ -42,7 +42,7 @@ export default function Home() {
   const [pinging, setPinging] = useState<string>('')
   const [latencies, setLatencies] = useState<Record<string, number>>({})
   const [user, setUser] = useState<User | null>(null)
-  const [totalStreams, setTotalStreams] = useState<number>(0)
+  const [streams, setStreams] = useState<Stream[]>([])
   const timer = useRef<NodeJS.Timeout | null>(null)
   
   const isAdmin = user?.email && ALLOWED_ADMIN_EMAILS.includes(user.email)
@@ -127,18 +127,17 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Fetch total stream count on mount
+  // Fetch all streams for count
   useEffect(() => {
-    const fetchTotalCount = async () => {
-      const { count, error } = await supabase
+    const fetchAllStreams = async () => {
+      const { data } = await supabase
         .from('streams')
-        .select('*', { count: 'exact', head: true })
-      
-      if (!error && count !== null) {
-        setTotalStreams(count)
+        .select('id, name, description, endpoint')
+      if (data) {
+        setStreams(data)
       }
     }
-    fetchTotalCount()
+    fetchAllStreams()
   }, [])
 
   // Initial load - fetch all streams
@@ -368,7 +367,7 @@ ws.run_forever()`
       </div>
 
       <div className="container mx-auto px-6 py-16">
-        <h1 className="text-center text-7xl font-black mb-4 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+        <h1 className="text-center text-7xl md:text-8xl font-black mb-4 text-white">
           DataPlug
         </h1>
         <p className="text-center text-2xl text-gray-400 mb-12">
@@ -390,7 +389,7 @@ ws.run_forever()`
           />
         </div>
         <p className="text-center text-gray-500 mt-8">
-          {totalStreams} streams • Request anything • Built by @0xJosephK
+          {streams.length} streams • Request anything • Built by @0xJosephK
         </p>
 
         <div className="grid gap-8 max-w-5xl mx-auto">
