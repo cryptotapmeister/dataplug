@@ -35,9 +35,62 @@ export default function AdminPage() {
   const [streams, setStreams] = useState<StreamStats[]>([])
   const [sortBy, setSortBy] = useState<'email' | 'created_at'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [formData, setFormData] = useState({
+    name: '',
+    endpoint: '',
+    description: '',
+    tags: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
   
   const handleStreamsClick = () => {
     router.push('/admin/streams')
+  }
+
+  const handleAddStream = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+
+    try {
+      const response = await fetch('/api/add-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success('Stream added successfully!')
+        setFormData({ name: '', endpoint: '', description: '', tags: '' })
+        // Refresh streams list
+        const { data, error } = await supabase
+          .from('streams')
+          .select('id, name, clicks_node, clicks_python')
+          .order('name')
+
+        if (!error && data) {
+          const streamStats: StreamStats[] = data.map(stream => ({
+            id: stream.id,
+            name: stream.name,
+            clicks_node: stream.clicks_node || 0,
+            clicks_python: stream.clicks_python || 0,
+            total: (stream.clicks_node || 0) + (stream.clicks_python || 0),
+          }))
+            .sort((a, b) => b.total - a.total)
+          setStreams(streamStats)
+        }
+      } else {
+        toast.error(result.error || 'Failed to add stream')
+      }
+    } catch (error: any) {
+      console.error('Error adding stream:', error)
+      toast.error('Failed to add stream')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // Check auth and admin access
@@ -298,6 +351,119 @@ export default function AdminPage() {
             <h3 className="text-cyan-400 text-sm font-medium mb-4 tracking-wide uppercase">Total Number of Streams</h3>
             <p className="text-7xl md:text-8xl font-black text-white mb-2 leading-none">{streams.length}</p>
             <p className="text-xs text-gray-500 mt-4">Click to view all</p>
+          </div>
+        </div>
+
+        {/* Add New Stream Card */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <div
+            className="rounded-3xl p-8"
+            style={{
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+            }}
+          >
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-6">Add New Stream</h2>
+            <form onSubmit={handleAddStream} className="space-y-6">
+              <div>
+                <label className="block text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wide">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 rounded-xl text-white placeholder:text-gray-500"
+                  style={{
+                    backgroundColor: '#0f0f0f',
+                    border: '1px solid rgba(0, 255, 255, 0.2)',
+                  }}
+                  placeholder="e.g. Solana Mempool"
+                />
+              </div>
+
+              <div>
+                <label className="block text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wide">
+                  Endpoint
+                </label>
+                <input
+                  type="text"
+                  value={formData.endpoint}
+                  onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 rounded-xl text-white placeholder:text-gray-500 font-mono text-sm"
+                  style={{
+                    backgroundColor: '#0f0f0f',
+                    border: '1px solid rgba(0, 255, 255, 0.2)',
+                  }}
+                  placeholder="wss://example.com/ws"
+                />
+              </div>
+
+              <div>
+                <label className="block text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wide">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl text-white placeholder:text-gray-500 resize-none"
+                  style={{
+                    backgroundColor: '#0f0f0f',
+                    border: '1px solid rgba(0, 255, 255, 0.2)',
+                  }}
+                  placeholder="Describe what this stream provides..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wide">
+                  Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl text-white placeholder:text-gray-500"
+                  style={{
+                    backgroundColor: '#0f0f0f',
+                    border: '1px solid rgba(0, 255, 255, 0.2)',
+                  }}
+                  placeholder="solana, blockchain, mempool"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full px-6 py-4 text-lg font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  border: '1px solid rgba(0, 255, 255, 0.4)',
+                  color: 'rgba(0, 255, 255, 0.9)',
+                  background: submitting ? 'rgba(0, 255, 255, 0.1)' : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                    e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                  }
+                }}
+              >
+                {submitting ? 'Adding...' : 'Add Stream'}
+              </button>
+            </form>
           </div>
         </div>
 
