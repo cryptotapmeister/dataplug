@@ -214,142 +214,196 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-16">
-        <h1 className="text-center text-6xl md:text-7xl font-black mb-12 text-white">
+      <div className="container mx-auto px-6 py-20">
+        <h1 className="text-center text-7xl md:text-8xl font-black mb-16 text-white">
           DataPlug Admin
         </h1>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-4xl mx-auto">
+        {/* Stats Cards - Premium Vision Pro Style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 max-w-5xl mx-auto">
           {/* Total Users */}
           <div
-            className="rounded-3xl p-6 transition-all duration-300"
+            className="rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02]"
             style={{
-              background: 'rgba(30, 30, 40, 0.6)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(0, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 16px 64px rgba(0, 255, 255, 0.2), 0 0 0 1px rgba(0, 255, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.5)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.3)'
             }}
           >
-            <h3 className="text-gray-400 text-sm mb-2">Total Registered Users</h3>
-            <p className="text-4xl font-bold text-white">{users.length}</p>
-            <p className="text-xs text-gray-500 mt-2">Note: Requires admin API access to fetch auth.users</p>
+            <h3 className="text-cyan-400 text-sm font-medium mb-4 tracking-wide uppercase">Total Registered Users</h3>
+            <p className="text-7xl md:text-8xl font-black text-white mb-2 leading-none">{users.length}</p>
+            <p className="text-xs text-gray-500 mt-4">Note: Requires admin API access to fetch auth.users</p>
           </div>
 
-          {/* Total Streams */}
+          {/* Total Copies */}
           <div
-            className="rounded-3xl p-6 transition-all duration-300"
+            className="rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02]"
             style={{
-              background: 'rgba(30, 30, 40, 0.6)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(0, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 16px 64px rgba(0, 255, 255, 0.2), 0 0 0 1px rgba(0, 255, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.5)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.3)'
             }}
           >
-            <h3 className="text-gray-400 text-sm mb-2">Total Streams</h3>
-            <p className="text-4xl font-bold text-white">{streams.length}</p>
+            <h3 className="text-cyan-400 text-sm font-medium mb-4 tracking-wide uppercase">Total Copies</h3>
+            <p className="text-7xl md:text-8xl font-black text-white mb-2 leading-none">
+              {streams.reduce((sum, s) => sum + s.total, 0)}
+            </p>
+            <p className="text-xs text-gray-500 mt-4">Across all streams</p>
           </div>
         </div>
 
-        {/* Most Popular Streams */}
-        <div className="max-w-6xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold text-white mb-6">Most Popular Streams</h2>
+        {/* Top 10 Most Popular Streams - Premium Leaderboard */}
+        <div className="max-w-6xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-8 text-center">Top 10 Streams</h2>
           <div
             className="rounded-3xl overflow-hidden"
             style={{
-              background: 'rgba(30, 30, 40, 0.6)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(0, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
             }}
           >
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-cyan-500/20">
-                  <th className="text-left p-4 text-cyan-300 font-semibold">Stream Name</th>
-                  <th className="text-right p-4 text-cyan-300 font-semibold">Total Copies</th>
-                  <th className="text-right p-4 text-cyan-300 font-semibold">Node.js</th>
-                  <th className="text-right p-4 text-cyan-300 font-semibold">Python</th>
-                </tr>
-              </thead>
-              <tbody>
-                {streams.map((stream, index) => (
-                  <tr
+            <div className="divide-y divide-cyan-500/10">
+              {streams.slice(0, 10).map((stream, index) => {
+                const rank = index + 1
+                const isTop3 = rank <= 3
+                return (
+                  <div
                     key={stream.id}
-                    className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition-colors"
+                    className="p-6 hover:bg-cyan-500/5 transition-all duration-200"
+                    style={{
+                      background: isTop3 ? 'rgba(0, 255, 255, 0.03)' : 'transparent',
+                    }}
                   >
-                    <td className="p-4 text-white font-medium">{stream.name}</td>
-                    <td className="p-4 text-right text-cyan-300 font-bold">{stream.total}</td>
-                    <td className="p-4 text-right text-gray-300">{stream.clicks_node}</td>
-                    <td className="p-4 text-right text-gray-300">{stream.clicks_python}</td>
-                  </tr>
-                ))}
-                {streams.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-8 text-center text-gray-500">
-                      No streams found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    <div className="flex items-center gap-6">
+                      {/* Rank Badge */}
+                      <div
+                        className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg"
+                        style={{
+                          background: isTop3
+                            ? 'linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 255, 255, 0.1))'
+                            : 'rgba(30, 30, 40, 0.8)',
+                          border: isTop3
+                            ? '1px solid rgba(0, 255, 255, 0.5)'
+                            : '1px solid rgba(0, 255, 255, 0.2)',
+                          color: isTop3 ? 'rgba(0, 255, 255, 1)' : 'rgba(255, 255, 255, 0.7)',
+                          boxShadow: isTop3
+                            ? '0 4px 16px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                            : 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                        }}
+                      >
+                        {rank}
+                      </div>
+
+                      {/* Stream Name */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl font-bold text-white truncate">{stream.name}</h3>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-8 flex-shrink-0">
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-cyan-300">{stream.total}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">Total</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-gray-300">{stream.clicks_node}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">Node.js</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-gray-300">{stream.clicks_python}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">Python</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {streams.length === 0 && (
+                <div className="p-12 text-center text-gray-500">
+                  No streams found
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users Table - Premium Style */}
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-white mb-6">All Users</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-8 text-center">All Users</h2>
           <div
             className="rounded-3xl overflow-hidden"
             style={{
-              background: 'rgba(30, 30, 40, 0.6)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(0, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              background: 'rgba(30, 30, 40, 0.7)',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 12px 48px rgba(0, 255, 255, 0.1), 0 0 0 1px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
             }}
           >
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-cyan-500/20">
-                  <th
-                    className="text-left p-4 text-cyan-300 font-semibold cursor-pointer hover:text-cyan-200 transition-colors"
+            <div className="divide-y divide-cyan-500/10">
+              <div
+                className="p-6 border-b border-cyan-500/20"
+                style={{
+                  background: 'rgba(0, 255, 255, 0.05)',
+                }}
+              >
+                <div className="flex items-center gap-6">
+                  <div
+                    className="text-left flex-1 text-cyan-300 font-semibold cursor-pointer hover:text-cyan-200 transition-colors text-sm uppercase tracking-wide"
                     onClick={() => handleSort('email')}
                   >
                     Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th
-                    className="text-left p-4 text-cyan-300 font-semibold cursor-pointer hover:text-cyan-200 transition-colors"
+                  </div>
+                  <div
+                    className="text-left flex-1 text-cyan-300 font-semibold cursor-pointer hover:text-cyan-200 transition-colors text-sm uppercase tracking-wide"
                     onClick={() => handleSort('created_at')}
                   >
                     Created At {sortBy === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedUsers.map((userData) => (
-                  <tr
-                    key={userData.id}
-                    className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition-colors"
-                  >
-                    <td className="p-4 text-white">{userData.email}</td>
-                    <td className="p-4 text-gray-300">
+                  </div>
+                </div>
+              </div>
+              {sortedUsers.map((userData) => (
+                <div
+                  key={userData.id}
+                  className="p-6 hover:bg-cyan-500/5 transition-colors"
+                >
+                  <div className="flex items-center gap-6">
+                    <div className="flex-1 text-white font-medium">{userData.email}</div>
+                    <div className="flex-1 text-gray-300">
                       {new Date(userData.created_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-                {sortedUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="p-8 text-center text-gray-500">
-                      No users found. Note: Fetching auth.users requires Supabase Admin API access.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {sortedUsers.length === 0 && (
+                <div className="p-12 text-center text-gray-500">
+                  No users found. Note: Fetching auth.users requires Supabase Admin API access.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
