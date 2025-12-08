@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -157,6 +158,32 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
+      {/* Top-left: Back to home */}
+      <div className="absolute top-6 left-6 z-10">
+        <Link
+          href="/"
+          className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2"
+          style={{
+            border: '1px solid rgba(0, 255, 255, 0.4)',
+            color: 'rgba(0, 255, 255, 0.9)',
+            background: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+            e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+            e.currentTarget.style.backdropFilter = 'blur(10px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+            e.currentTarget.style.backdropFilter = 'none'
+          }}
+        >
+          <span>←</span>
+          <span>Home</span>
+        </Link>
+      </div>
+
       {/* Top-right navigation */}
       <div className="absolute top-6 right-6 z-10">
         <div className="flex items-center gap-4">
