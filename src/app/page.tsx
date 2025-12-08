@@ -357,12 +357,12 @@ ws.run_forever()`
           DataPlug
         </h1>
         <p className="text-center text-2xl text-gray-400 mb-12">
-          Find any real-time data stream in seconds
+          Real-time data streams for crypto, social, finance, weather, gaming, AI and everything else
         </p>
 
         <div className="max-w-2xl mx-auto mb-16">
           <Input
-            placeholder="e.g. solana confirmed transactions"
+            placeholder="e.g. solana mempool, github stars, spotify playing, earthquake"
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="h-16 text-xl text-white placeholder:text-gray-500"
