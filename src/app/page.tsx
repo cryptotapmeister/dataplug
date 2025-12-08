@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -15,6 +17,12 @@ import {
   CardFooter,
 } from '@/components/ui/card'
 
+const ALLOWED_ADMIN_EMAILS = [
+  'joseph@cryptotap.io',
+  'admin@dataplug.dev',
+  'joseph@dataplug.dev',
+]
+
 interface Stream {
   id: string
   name: string
@@ -27,6 +35,7 @@ interface Stream {
 }
 
 export default function Home() {
+  const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Stream[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,6 +43,8 @@ export default function Home() {
   const [latencies, setLatencies] = useState<Record<string, number>>({})
   const [user, setUser] = useState<User | null>(null)
   const timer = useRef<NodeJS.Timeout | null>(null)
+  
+  const isAdmin = user?.email && ALLOWED_ADMIN_EMAILS.includes(user.email)
 
   const search = useCallback(async (q: string) => {
     setLoading(true)
@@ -239,21 +250,23 @@ ws.run_forever()`
     try {
       await navigator.clipboard.writeText(code)
       toast.success('📋 Copied!')
-      // Track click
-      fetch('/api/click', {
-        method: 'POST',
-        body: JSON.stringify({ id, type }),
-        headers: { 'Content-Type': 'application/json' },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (!data.success) {
-            console.error('Click tracking failed:', data.error)
-          }
+      // Track click - but skip if on admin page
+      if (pathname !== '/admin') {
+        fetch('/api/click', {
+          method: 'POST',
+          body: JSON.stringify({ id, type }),
+          headers: { 'Content-Type': 'application/json' },
         })
-        .catch(err => {
-          console.error('Click tracking error:', err)
-        })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.success) {
+              console.error('Click tracking failed:', data.error)
+            }
+          })
+          .catch(err => {
+            console.error('Click tracking error:', err)
+          })
+      }
     } catch (err) {
       console.error('Failed to copy to clipboard:', err)
       toast.error('Failed to copy')
@@ -269,6 +282,29 @@ ws.run_forever()`
             <span className="text-white text-sm">
               Welcome @{user.email?.split('@')[0]}
             </span>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200"
+                style={{
+                  border: '1px solid rgba(0, 255, 255, 0.4)',
+                  color: 'rgba(0, 255, 255, 0.9)',
+                  background: 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                  e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                  e.currentTarget.style.backdropFilter = 'blur(10px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                  e.currentTarget.style.backdropFilter = 'none'
+                }}
+              >
+                Admin
+              </Link>
+            )}
             <button
               onClick={handleSignOut}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
