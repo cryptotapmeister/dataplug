@@ -149,6 +149,10 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('✅ Successfully updated clicks_python:', updateData)
       }
+    } else if (type === 'vibe') {
+      // Track vibe clicks (for analytics, no increment needed)
+      console.log('✅ Vibe click tracked for stream:', id)
+      // You can add a clicks_vibe column later if needed
     } else {
       console.error('❌ Invalid type:', type)
       return NextResponse.json({ success: false, error: 'Invalid type' }, { status: 400 })

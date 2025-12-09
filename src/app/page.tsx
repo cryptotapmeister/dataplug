@@ -223,6 +223,35 @@ export default function Home() {
     await supabase.auth.signOut()
   }, [])
 
+  const vibeCopy = useCallback(async (name: string, endpoint: string, id: string) => {
+    const prompt = `Create a live dashboard showing ${name} using this real-time WebSocket: ${endpoint}`
+    
+    try {
+      await navigator.clipboard.writeText(prompt)
+      toast.success('📋 Copied!')
+      // Track click - but skip if on admin page
+      if (pathname !== '/admin') {
+        fetch('/api/click', {
+          method: 'POST',
+          body: JSON.stringify({ id, type: 'vibe' }),
+          headers: { 'Content-Type': 'application/json' },
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.success) {
+              console.error('Click tracking failed:', data.error)
+            }
+          })
+          .catch(err => {
+            console.error('Click tracking error:', err)
+          })
+      }
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+      toast.error('Failed to copy')
+    }
+  }, [pathname])
+
   const copy = useCallback(async (endpoint: string, id: string, type: 'node' | 'python') => {
     const nodeCode = `const WebSocket = require('ws');
 const ws = new WebSocket('${endpoint}');
@@ -502,6 +531,40 @@ ws.run_forever()`
                       }}
                     >
                       Copy Python
+                    </button>
+                    <button
+                      onClick={() => vibeCopy(s.name, s.endpoint, s.id)}
+                      className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative group"
+                      style={{
+                        border: '1px solid rgba(0, 255, 255, 0.4)',
+                        color: 'rgba(0, 255, 255, 0.9)',
+                        background: 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'
+                        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.6)'
+                        e.currentTarget.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.3), 0 0 10px rgba(0, 255, 255, 0.2)'
+                        e.currentTarget.style.backdropFilter = 'blur(10px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                        e.currentTarget.style.boxShadow = 'none'
+                        e.currentTarget.style.backdropFilter = 'none'
+                      }}
+                      title="Copies prompt for Cursor • Replit • Lovable • Comet • any vibe-coder"
+                    >
+                      Vibe Code It!
+                      <span
+                        className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 text-xs text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                        style={{
+                          background: 'rgba(30, 30, 40, 0.95)',
+                          border: '1px solid rgba(139, 92, 246, 0.5)',
+                          backdropFilter: 'blur(10px)',
+                        }}
+                      >
+                        Copies prompt for Cursor • Replit • Lovable • Comet • any vibe-coder
+                      </span>
                     </button>
                   </div>
                 </div>
