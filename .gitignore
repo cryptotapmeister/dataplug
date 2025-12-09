@@ -40,5 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# test pages (local only)
-src/app/admin/test-streams/
+# test pages (local only) - moved to /admin/test-streams (now tracked and protected)
