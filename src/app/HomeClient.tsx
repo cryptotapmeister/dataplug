@@ -47,6 +47,10 @@ export default function HomeClient({ placeholder }: HomeClientProps) {
   const [latencies, setLatencies] = useState<Record<string, number>>({})
   const [user, setUser] = useState<User | null>(null)
   const [streams, setStreams] = useState<Stream[]>([])
+  const [previewing, setPreviewing] = useState<Record<string, boolean>>({})
+  const [previewMessages, setPreviewMessages] = useState<Record<string, string>>({})
+  const [previewVisible, setPreviewVisible] = useState<Record<string, boolean>>({})
+  const [previewWs, setPreviewWs] = useState<Record<string, WebSocket | null>>({})
   const timer = useRef<NodeJS.Timeout | null>(null)
   
   const isAdmin = user?.email && ALLOWED_ADMIN_EMAILS.includes(user.email)
@@ -157,6 +161,119 @@ export default function HomeClient({ placeholder }: HomeClientProps) {
       if (timer.current) clearTimeout(timer.current)
     }
   }, [query, search])
+
+  const formatJSON = (text: string) => {
+    try {
+      const parsed = JSON.parse(text)
+      const formatted = JSON.stringify(parsed, null, 2)
+      // Split by JSON keys and add cyan color to keys
+      const parts = formatted.split(/"([^"]+)":/g)
+      return parts.map((part, index) => {
+        if (index % 2 === 1) {
+          // This is a key
+          return <span key={index} style={{ color: 'rgba(0, 255, 255, 0.9)' }}>"{part}"</span>
+        }
+        return <span key={index}>{part}</span>
+      })
+    } catch {
+      return <span>{text}</span>
+    }
+  }
+
+  const preview = useCallback((endpoint: string, id: string) => {
+    // Toggle visibility if already previewed
+    if (previewVisible[id]) {
+      setPreviewVisible(prev => ({ ...prev, [id]: false }))
+      return
+    }
+
+    // If already has a message, just show it
+    if (previewMessages[id]) {
+      setPreviewVisible(prev => ({ ...prev, [id]: true }))
+      return
+    }
+
+    // Start new preview
+    setPreviewing(prev => ({ ...prev, [id]: true }))
+    setPreviewVisible(prev => ({ ...prev, [id]: true }))
+
+    let ws: WebSocket | null = null
+    let timeoutId: NodeJS.Timeout | null = null
+    let messageTimeoutId: NodeJS.Timeout | null = null
+    let messageReceived = false
+    const startTime = Date.now()
+
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      if (messageTimeoutId) clearTimeout(messageTimeoutId)
+      if (ws) {
+        try {
+          ws.close()
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+      setPreviewWs(prev => {
+        const newWs = { ...prev }
+        delete newWs[id]
+        return newWs
+      })
+    }
+
+    try {
+      ws = new WebSocket(endpoint)
+      setPreviewWs(prev => ({ ...prev, [id]: ws }))
+
+      // 5-second timeout for "No data received"
+      timeoutId = setTimeout(() => {
+        if (!messageReceived) {
+          setPreviewMessages(prev => ({ ...prev, [id]: 'No data received (yet)' }))
+          setPreviewing(prev => ({ ...prev, [id]: false }))
+          cleanup()
+        }
+      }, 5000)
+
+      // 3-second window to collect messages
+      messageTimeoutId = setTimeout(() => {
+        if (messageReceived) {
+          cleanup()
+        }
+      }, 3000)
+
+      ws.onopen = () => {
+        // Connection opened, waiting for messages
+      }
+
+      ws.onmessage = (event) => {
+        if (!messageReceived) {
+          messageReceived = true
+          const message = event.data.toString()
+          setPreviewMessages(prev => ({ ...prev, [id]: message }))
+          setPreviewing(prev => ({ ...prev, [id]: false }))
+          if (timeoutId) clearTimeout(timeoutId)
+          // Close after first message
+          setTimeout(() => {
+            cleanup()
+          }, 100)
+        }
+      }
+
+      ws.onerror = () => {
+        setPreviewMessages(prev => ({ ...prev, [id]: 'Connection error' }))
+        setPreviewing(prev => ({ ...prev, [id]: false }))
+        cleanup()
+      }
+
+      ws.onclose = () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        if (messageTimeoutId) clearTimeout(messageTimeoutId)
+      }
+    } catch (err) {
+      setPreviewMessages(prev => ({ ...prev, [id]: 'Failed to connect' }))
+      setPreviewing(prev => ({ ...prev, [id]: false }))
+      cleanup()
+    }
+  }, [previewVisible, previewMessages])
 
   const ping = useCallback(async (endpoint: string, id: string) => {
     setPinging(id)
@@ -497,6 +614,38 @@ ws.run_forever()`
                       {pinging === s.id ? 'Pinging…' : latencies[s.id] ? `${latencies[s.id]}ms` : 'Ping'}
                     </button>
                     <button
+                      onClick={() => preview(s.endpoint, s.id)}
+                      className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative group"
+                      style={{
+                        border: '1px solid rgba(0, 255, 255, 0.4)',
+                        color: 'rgba(0, 255, 255, 0.9)',
+                        background: 'transparent',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
+                        e.currentTarget.style.backdropFilter = 'blur(10px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
+                        e.currentTarget.style.backdropFilter = 'none'
+                      }}
+                      title="Show one live message from this stream"
+                    >
+                      {previewing[s.id] ? 'Connecting…' : previewMessages[s.id] ? `Preview (1 message)` : 'Preview'}
+                      <span
+                        className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 text-xs text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                        style={{
+                          background: 'rgba(30, 30, 40, 0.95)',
+                          border: '1px solid rgba(0, 255, 255, 0.5)',
+                          backdropFilter: 'blur(10px)',
+                        }}
+                      >
+                        Show one live message from this stream
+                      </span>
+                    </button>
+                    <button
                       onClick={() => copy(s.endpoint, s.id, 'node')}
                       className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
                       style={{
@@ -573,6 +722,23 @@ ws.run_forever()`
                       </span>
                     </button>
                   </div>
+                  {/* Preview Log Box */}
+                  {previewVisible[s.id] && previewMessages[s.id] && (
+                    <div
+                      className="mt-4 p-4 rounded-xl font-mono text-xs overflow-auto"
+                      style={{
+                        background: 'rgba(20, 20, 40, 0.7)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(0, 255, 255, 0.2)',
+                        maxHeight: '300px',
+                      }}
+                    >
+                      <div className="text-gray-300 whitespace-pre-wrap break-words">
+                        {formatJSON(previewMessages[s.id])}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
