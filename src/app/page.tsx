@@ -224,7 +224,9 @@ export default function Home() {
   }, [])
 
   const vibeCopy = useCallback(async (name: string, endpoint: string, id: string) => {
-    const prompt = `Create a live dashboard showing ${name} using this real-time WebSocket: ${endpoint}`
+    const prompt = `Use this real-time WebSocket to build something cool: ${endpoint}
+
+Show live ${name} data with beautiful visuals and animations.`
     
     try {
       await navigator.clipboard.writeText(prompt)
