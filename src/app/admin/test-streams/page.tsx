@@ -162,11 +162,12 @@ export default function TestStreamsPage() {
     setTesting(false)
   }
 
-  // Sort results: broken first, then by name
+  // Sort results: broken first, then by ID (highest first)
   const sortedResults = [...results].sort((a, b) => {
     if (a.status === 'broken' && b.status !== 'broken') return -1
     if (a.status !== 'broken' && b.status === 'broken') return 1
-    return a.stream.name.localeCompare(b.stream.name)
+    // Sort by ID descending (highest first)
+    return parseInt(b.stream.id) - parseInt(a.stream.id)
   })
 
   const brokenCount = results.filter(r => r.status === 'broken').length
@@ -278,11 +279,12 @@ export default function TestStreamsPage() {
                     background: 'rgba(0, 255, 255, 0.05)',
                   }}
                 >
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-3 text-cyan-300 font-semibold text-sm uppercase tracking-wide">Stream Name</div>
-                    <div className="col-span-5 text-cyan-300 font-semibold text-sm uppercase tracking-wide">Endpoint</div>
-                    <div className="col-span-2 text-center text-cyan-300 font-semibold text-sm uppercase tracking-wide">Status</div>
-                    <div className="col-span-2 text-right text-cyan-300 font-semibold text-sm uppercase tracking-wide">Latency</div>
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '80px 1fr 2fr 120px 120px' }}>
+                    <div className="text-cyan-300 font-semibold text-sm uppercase tracking-wide">ID</div>
+                    <div className="text-cyan-300 font-semibold text-sm uppercase tracking-wide">Stream Name</div>
+                    <div className="text-cyan-300 font-semibold text-sm uppercase tracking-wide">Endpoint</div>
+                    <div className="text-center text-cyan-300 font-semibold text-sm uppercase tracking-wide">Status</div>
+                    <div className="text-right text-cyan-300 font-semibold text-sm uppercase tracking-wide">Latency</div>
                   </div>
                 </div>
 
@@ -295,10 +297,11 @@ export default function TestStreamsPage() {
                       background: result.status === 'broken' ? 'rgba(220, 38, 38, 0.05)' : 'transparent',
                     }}
                   >
-                    <div className="grid grid-cols-12 gap-4 items-center">
-                      <div className="col-span-3 text-white font-medium">{result.stream.name}</div>
-                      <div className="col-span-5 text-gray-300 font-mono text-sm break-all">{result.stream.endpoint}</div>
-                      <div className="col-span-2 text-center">
+                    <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '80px 1fr 2fr 120px 120px' }}>
+                      <div className="text-white font-bold font-mono">{result.stream.id}</div>
+                      <div className="text-white font-medium">{result.stream.name}</div>
+                      <div className="text-gray-300 font-mono text-sm break-all">{result.stream.endpoint}</div>
+                      <div className="text-center">
                         {result.status === 'testing' && (
                           <span className="text-yellow-400 font-semibold">Testing...</span>
                         )}
