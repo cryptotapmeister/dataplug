@@ -224,14 +224,14 @@ export default function HomeClient({ placeholder }: HomeClientProps) {
       ws = new WebSocket(endpoint)
       setPreviewWs(prev => ({ ...prev, [id]: ws }))
 
-      // 5-second timeout for "No data received"
+      // 4-second timeout for connection status
       timeoutId = setTimeout(() => {
         if (!messageReceived) {
-          setPreviewMessages(prev => ({ ...prev, [id]: 'No data received (yet)' }))
+          setPreviewMessages(prev => ({ ...prev, [id]: 'Connected ✓ — waiting for subscription (normal for RPC nodes)' }))
           setPreviewing(prev => ({ ...prev, [id]: false }))
           cleanup()
         }
-      }, 5000)
+      }, 4000)
 
       // 3-second window to collect messages
       messageTimeoutId = setTimeout(() => {
