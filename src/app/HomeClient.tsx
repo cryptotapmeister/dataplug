@@ -541,7 +541,15 @@ ws.run_forever()`
           />
         </div>
         <p className="text-center text-gray-500 mt-8">
-          {streams.length} streams • Request anything • Built by @0xJosephK
+          Real-time streams for crypto, AI, gaming & more • Request anything • Built by{' '}
+          <a
+            href="https://x.com/0xJosephK"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-400 hover:text-cyan-300 underline underline-offset-4"
+          >
+            @0xJosephK
+          </a>
         </p>
 
         <div className="grid gap-8 max-w-5xl mx-auto">
