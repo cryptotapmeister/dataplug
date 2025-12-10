@@ -367,7 +367,7 @@ export default function AdminPage() {
             }}
           >
             <h2 className="text-3xl md:text-4xl font-black text-white mb-6">Add New Stream</h2>
-            <form onSubmit={handleAddStream} className="space-y-6">
+            <form onSubmit={handleAddStream} action={undefined} className="space-y-6">
               <div>
                 <label className="block text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wide">
                   Name

@@ -523,7 +523,7 @@ ws.run_forever()`
           DataPlug
         </h1>
         <p className="text-center text-2xl text-gray-400 mb-12">
-          Real-time data streams for crypto, social, finance, weather, gaming, AI and everything else
+          Real-time data streams for crypto, social, finance, weather, gaming, AI and Everything else
         </p>
 
         <div className="max-w-2xl mx-auto mb-16">
