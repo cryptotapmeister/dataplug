@@ -11,19 +11,11 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="inline-block px-6 py-3 text-lg font-medium rounded-lg transition-all duration-200"
+          className="inline-block px-6 py-3 text-lg font-medium rounded-lg transition-all duration-200 hover:bg-[rgba(0,255,255,0.1)] hover:border-[rgba(0,255,255,0.6)]"
           style={{
             border: '1px solid rgba(0, 255, 255, 0.4)',
             color: 'rgba(0, 255, 255, 0.9)',
             background: 'transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 255, 255, 0.1)'
-            e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.6)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = 'rgba(0, 255, 255, 0.4)'
           }}
         >
           Go Home
