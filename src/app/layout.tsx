@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DataPlug - Find any real-time data stream in seconds",
+  title: "Dataplug - Instant apps from live data",
   description: "Find any real-time data stream in seconds",
 };
 
