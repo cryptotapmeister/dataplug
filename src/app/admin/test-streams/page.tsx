@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+// Force dynamic rendering - admin page requires authentication and shouldn't be prerendered
+export const dynamic = 'force-dynamic'
+
 interface Stream {
   id: string
   name: string

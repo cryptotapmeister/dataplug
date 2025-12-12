@@ -7,6 +7,9 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
+// Force dynamic rendering - admin page requires authentication and shouldn't be prerendered
+export const dynamic = 'force-dynamic'
+
 const ALLOWED_ADMIN_EMAILS = [
   'joseph@cryptotap.io',
   'admin@dataplug.dev',
